@@ -586,6 +586,35 @@ public class BlazeIdeInterfaceAspectsImpl implements BlazeIdeInterface {
       ImmutableSet<OutputGroup> outputGroups,
       BlazeInvocationContext blazeInvocationContext,
       boolean invokeParallel) {
+    return build(
+        project,
+        context,
+        workspaceRoot,
+        blazeVersion,
+        invoker,
+        projectViewSet,
+        shardedTargets,
+        workspaceLanguageSettings,
+        outputGroups,
+        blazeInvocationContext,
+        invokeParallel,
+        ImmutableMap.of());
+  }
+
+  @Override
+  public BlazeBuildOutputs build(
+      Project project,
+      BlazeContext context,
+      WorkspaceRoot workspaceRoot,
+      BlazeVersionData blazeVersion,
+      BuildInvoker invoker,
+      ProjectViewSet projectViewSet,
+      ShardedTargetList shardedTargets,
+      WorkspaceLanguageSettings workspaceLanguageSettings,
+      ImmutableSet<OutputGroup> outputGroups,
+      BlazeInvocationContext blazeInvocationContext,
+      boolean invokeParallel,
+      Map<String, String> envVars) {
     AspectStrategy aspectStrategy = AspectStrategy.getInstance(blazeVersion);
 
     final Ref<BlazeBuildOutputs> combinedResult = new Ref<>();
@@ -648,7 +677,8 @@ public class BlazeIdeInterfaceAspectsImpl implements BlazeIdeInterface {
                             aspectStrategy,
                             outputGroups,
                             additionalBlazeFlags,
-                            invokeParallel);
+                            invokeParallel,
+                            envVars);
                     if (result.buildResult.outOfMemory()) {
                       logger.warn(
                           String.format(
@@ -734,7 +764,8 @@ public class BlazeIdeInterfaceAspectsImpl implements BlazeIdeInterface {
       AspectStrategy aspectStrategy,
       ImmutableSet<OutputGroup> outputGroups,
       List<String> additionalBlazeFlags,
-      boolean invokeParallel)
+      boolean invokeParallel,
+      Map<String, String> envVars)
       throws BuildException {
 
     boolean onlyDirectDeps =
@@ -762,7 +793,7 @@ public class BlazeIdeInterfaceAspectsImpl implements BlazeIdeInterface {
       aspectStrategy.addAspectAndOutputGroups(
           builder, outputGroups, activeLanguages, onlyDirectDeps);
 
-      return invoker.getCommandRunner().run(project, builder, buildResultHelper, context, ImmutableMap.of());
+      return invoker.getCommandRunner().run(project, builder, buildResultHelper, context, envVars);
     }
   }
 }
