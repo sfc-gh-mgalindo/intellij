@@ -64,12 +64,13 @@ class BazelExecService(private val project: Project) : Disposable {
     }
   }
 
-  private suspend fun execute(ctx: BlazeContext, cmd: BlazeCommand): Int {
+  private suspend fun execute(ctx: BlazeContext, cmd: BlazeCommand, env: Map<String, String> = mapOf()): Int {
     val root = cmd.effectiveWorkspaceRoot.orElseGet { WorkspaceRoot.fromProject(project).path() }
 
     val cmdLine = GeneralCommandLine()
       .withExePath(cmd.binaryPath)
       .withParameters(cmd.toArgumentList())
+      .withEnvironment(env)
       .apply { setWorkDirectory(root.pathString) } // required for backwards compatability
       .withRedirectErrorStream(true)
 
@@ -156,7 +157,7 @@ class BazelExecService(private val project: Project) : Disposable {
     }
   }
 
-  fun build(ctx: BlazeContext, cmdBuilder: BlazeCommand.Builder): BlazeBuildOutputs {
+  fun build(ctx: BlazeContext, cmdBuilder: BlazeCommand.Builder, env: Map<String, String> = mapOf()): BlazeBuildOutputs {
     assertNonBlocking()
     LOG.assertTrue(cmdBuilder.name == BlazeCommandName.BUILD)
 
@@ -165,7 +166,7 @@ class BazelExecService(private val project: Project) : Disposable {
 
       val parseJob = parseEvents(ctx, provider)
 
-      val exitCode = execute(ctx, cmdBuilder.build())
+      val exitCode = execute(ctx, cmdBuilder.build(), env)
       val result = BuildResult.fromExitCode(exitCode)
 
       parseJob.cancelAndJoin()

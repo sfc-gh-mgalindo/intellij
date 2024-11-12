@@ -19,6 +19,7 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.idea.blaze.base.issueparser.BlazeIssueParser.targetDetectionQueryParsers;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -75,7 +76,9 @@ import com.intellij.openapi.util.text.StringUtil;
 import java.io.File;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
 /** Runs the 'blaze build' phase of sync. */
@@ -446,6 +449,13 @@ public final class BuildPhaseSyncTask {
           // We don't want blaze build errors to fail the whole sync
           context.setPropagatesErrors(false);
 
+          // Snowflake specific: we pass an extra variable RECORD_INVOCATION_CORRELATION_ID 
+          // in order to group the builds from all shards as a single invocation in the
+          // metrics.
+          Map<String, String> envVars = ImmutableMap.of(
+            "RECORD_INVOCATION_CORRELATION_ID",
+          UUID.randomUUID().toString());
+
           BlazeIdeInterface blazeIdeInterface = BlazeIdeInterface.getInstance();
           return blazeIdeInterface.build(
               project,
@@ -458,7 +468,8 @@ public final class BuildPhaseSyncTask {
               projectState.getLanguageSettings(),
               ImmutableSet.of(OutputGroup.RESOLVE, OutputGroup.INFO),
               BlazeInvocationContext.SYNC_CONTEXT,
-              invokeParallel);
+              invokeParallel,
+	      envVars);
         });
   }
 }
