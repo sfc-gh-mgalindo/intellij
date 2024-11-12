@@ -16,6 +16,7 @@
 package com.google.idea.blaze.clwb.run;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.idea.blaze.base.async.process.LineProcessingOutputStream;
 import com.google.idea.blaze.base.bazel.BuildSystem.BuildInvoker;
@@ -246,6 +247,14 @@ public final class BlazeCidrLauncher extends CidrLauncher {
 
       commandLine.addParameters(handlerState.getExeFlagsState().getFlagsForExternalProcesses());
       commandLine.addParameters(handlerState.getTestArgs());
+
+      if (BlazeCommandName.TEST.equals(handlerState.getCommandState().getCommand())) {
+        String pwd = runner.testEnvironment.get("PWD");
+        if (!Strings.isNullOrEmpty(pwd)) {
+          commandLine.setWorkDirectory(pwd);
+        }
+        commandLine.getEnvironment().putAll(runner.testEnvironment);
+      }
 
       if (CppBlazeRules.RuleTypes.CC_TEST.getKind().equals(configuration.getTargetKind())) {
         convertBlazeTestFilterToExecutableFlag().ifPresent(commandLine::addParameters);
